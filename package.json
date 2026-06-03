@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
-    "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\""
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\"",
+    "validate": "prettier --write --log-level warn \"src/**/*.{ts,tsx,css}\" && npm run lint && npm run build"
   },
   "dependencies": {
     "@tanstack/react-router": "^1.95.0",

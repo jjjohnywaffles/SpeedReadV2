@@ -36,7 +36,11 @@ export interface UseReader {
   seekTo: (index: number) => void;
 }
 
-export function useReader({ text, initialWpm = 300, progressive = false }: UseReaderOptions): UseReader {
+export function useReader({
+  text,
+  initialWpm = 300,
+  progressive = false,
+}: UseReaderOptions): UseReader {
   const words = useMemo(() => text.split(/\s+/).filter(Boolean), [text]);
   const totalWords = words.length;
 
