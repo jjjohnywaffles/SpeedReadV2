@@ -1,4 +1,5 @@
 import { Link, createFileRoute } from '@tanstack/react-router';
+import { PdfUpload } from '../components/upload/PdfUpload';
 
 export const Route = createFileRoute('/home')({
   component: HomePage,
@@ -12,26 +13,22 @@ function HomePage() {
           Welcome to <span className="text-accent">SpeedRead</span>
         </h1>
 
-        <div className="flex w-full flex-col gap-3 sm:flex-row sm:justify-center">
+        <div className="flex w-full flex-col items-center gap-6">
           <Link
             to="/example"
             className="rounded-lg bg-accent px-6 py-3 font-mono text-sm font-semibold text-bg-primary transition-colors hover:bg-accent/80"
           >
             Try sample
           </Link>
-          <button
-            type="button"
-            disabled
-            title="Coming soon"
-            className="cursor-not-allowed rounded-lg border border-border px-6 py-3 font-mono text-sm text-text-muted"
-          >
-            Upload documents or text
-          </button>
-        </div>
 
-        <p className="font-mono text-xs text-text-muted">
-          Document upload coming soon — for now, try the sample.
-        </p>
+          <div className="flex w-full items-center gap-3 font-mono text-xs text-text-muted">
+            <div className="h-px flex-1 bg-border" />
+            <span>or</span>
+            <div className="h-px flex-1 bg-border" />
+          </div>
+
+          <PdfUpload />
+        </div>
       </div>
     </main>
   );

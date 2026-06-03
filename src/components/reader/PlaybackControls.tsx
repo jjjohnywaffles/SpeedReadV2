@@ -102,20 +102,20 @@ export function PlaybackControls({ reader }: Props) {
         {progressive ? (
           <span className="font-mono text-xs text-accent">{effectiveWpm} WPM</span>
         ) : (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <input
-              type="number"
+              type="range"
               value={wpm}
-              onChange={(e) => {
-                const v = Math.max(100, Math.min(1000, Number(e.target.value) || 100));
-                reader.setWpm(v);
-              }}
-              className="w-16 rounded border border-border bg-bg-terminal px-1.5 py-1 text-center font-mono text-xs text-accent focus:border-accent focus:outline-none"
+              onChange={(e) => reader.setWpm(Number(e.target.value))}
               min={100}
               max={1000}
               step={25}
+              className="w-40 accent-accent"
+              aria-label="Words per minute"
             />
-            <span className="font-mono text-xs text-text-muted">WPM</span>
+            <span className="w-20 text-right font-mono text-xs text-accent tabular-nums">
+              {wpm} WPM
+            </span>
           </div>
         )}
       </div>
