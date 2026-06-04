@@ -16,12 +16,20 @@ function LandingPage() {
           Presentation. Words flash one at a time at your chosen speed, eliminating eye movement and
           letting your brain focus on recognition.
         </p>
-        <Link
-          to="/home"
-          className="rounded-lg bg-accent px-8 py-3 font-mono text-sm font-semibold text-bg-primary transition-colors hover:bg-accent/80"
-        >
-          Begin
-        </Link>
+        <div className="flex flex-col items-center gap-3">
+          <Link
+            to="/home"
+            className="rounded-lg bg-accent px-8 py-3 font-mono text-sm font-semibold text-bg-primary transition-colors hover:bg-accent/80"
+          >
+            Begin
+          </Link>
+          <Link
+            to="/example"
+            className="font-mono text-xs text-text-secondary underline decoration-text-muted underline-offset-4 transition-colors hover:text-text-primary hover:decoration-text-secondary"
+          >
+            or try the sample first
+          </Link>
+        </div>
       </div>
     </main>
   );

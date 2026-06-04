@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router';
 import { useReader } from '../../hooks/useReader';
 import { useKeyboardControls } from '../../hooks/useKeyboardControls';
+import { ClickableWordList } from './ClickableWordList';
 import { RsvpFlasher } from './RsvpFlasher';
 import { PlaybackControls } from './PlaybackControls';
 import { ProgressBar } from './ProgressBar';
@@ -16,11 +17,11 @@ export function Reader({ text, initialWpm = 300, progressive = false, backHref =
   const reader = useReader({ text, initialWpm, progressive });
   useKeyboardControls(reader);
 
-  const { hasStarted, isFinished, totalWords, wpm, currentWord } = reader;
+  const { hasStarted, isFinished, totalWords, wpm, currentWord, words, currentIndex } = reader;
 
   return (
     <div className="flex h-screen w-full flex-col bg-bg-primary">
-      <header className="flex items-center justify-between border-b border-border px-4 py-3">
+      <header className="flex items-center justify-between border-b border-border bg-bg-terminal px-4 py-3">
         <Link
           to="/"
           className="font-mono text-sm font-semibold text-accent transition-opacity hover:opacity-80"
@@ -35,7 +36,7 @@ export function Reader({ text, initialWpm = 300, progressive = false, backHref =
         </Link>
       </header>
 
-      <div className="flex flex-1 flex-col items-center justify-center px-8">
+      <div className="flex h-72 shrink-0 flex-col items-center justify-center border-b border-border px-8 sm:h-96">
         {!hasStarted ? (
           <div className="flex flex-col items-center gap-4">
             <p className="font-mono text-sm text-text-secondary">
@@ -69,6 +70,17 @@ export function Reader({ text, initialWpm = 300, progressive = false, backHref =
 
       <ProgressBar reader={reader} />
       <PlaybackControls reader={reader} />
+
+      <div className="custom-scrollbar flex-1 overflow-y-auto px-6 py-4">
+        <ClickableWordList
+          words={words}
+          activeIndex={currentIndex}
+          onWordClick={(i) => {
+            reader.pause();
+            reader.seekTo(i);
+          }}
+        />
+      </div>
     </div>
   );
 }

@@ -7,5 +7,5 @@ export const Route = createFileRoute('/example')({
 });
 
 function ExamplePage() {
-  return <Reader text={SAMPLE_TEXT} initialWpm={200} progressive backHref="/home" />;
+  return <Reader text={SAMPLE_TEXT} initialWpm={200} progressive backHref="/" />;
 }
