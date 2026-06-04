@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { silentRefresh } from '../lib/googleAuth';
+import { decodeGoogleJwt } from '../lib/jwt';
 
 export interface UserProfile {
   sub: string;
@@ -14,6 +16,7 @@ interface AuthState {
   signIn: (token: string, user: UserProfile) => void;
   signOut: () => void;
   continueAsGuest: () => void;
+  refresh: () => Promise<string | null>;
 }
 
 const TOKEN_KEY = 'sr.auth.token';
@@ -34,25 +37,64 @@ function loadInitialState(): Pick<AuthState, 'token' | 'user' | 'isGuest'> {
   }
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+function persist(token: string, user: UserProfile) {
+  localStorage.setItem(TOKEN_KEY, token);
+  localStorage.setItem(USER_KEY, JSON.stringify(user));
+  localStorage.removeItem(GUEST_KEY);
+}
+
+function clearPersisted() {
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(USER_KEY);
+  localStorage.removeItem(GUEST_KEY);
+}
+
+let refreshInFlight: Promise<string | null> | null = null;
+
+export const useAuthStore = create<AuthState>((set, get) => ({
   ...loadInitialState(),
 
   signIn: (token, user) => {
-    localStorage.setItem(TOKEN_KEY, token);
-    localStorage.setItem(USER_KEY, JSON.stringify(user));
-    localStorage.removeItem(GUEST_KEY);
+    persist(token, user);
     set({ token, user, isGuest: false });
   },
 
   signOut: () => {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
-    localStorage.removeItem(GUEST_KEY);
+    clearPersisted();
     set({ token: null, user: null, isGuest: false });
   },
 
   continueAsGuest: () => {
     localStorage.setItem(GUEST_KEY, '1');
     set({ token: null, user: null, isGuest: true });
+  },
+
+  refresh: async () => {
+    if (refreshInFlight) return refreshInFlight;
+    refreshInFlight = (async () => {
+      try {
+        const token = await silentRefresh();
+        const payload = decodeGoogleJwt(token);
+        const user: UserProfile = {
+          sub: payload.sub,
+          email: payload.email,
+          name: payload.name,
+          picture: payload.picture,
+        };
+        persist(token, user);
+        set({ token, user, isGuest: false });
+        return token;
+      } catch (err) {
+        console.warn('[auth] silent refresh failed', err);
+        if (get().user) {
+          clearPersisted();
+          set({ token: null, user: null, isGuest: false });
+        }
+        return null;
+      } finally {
+        refreshInFlight = null;
+      }
+    })();
+    return refreshInFlight;
   },
 }));

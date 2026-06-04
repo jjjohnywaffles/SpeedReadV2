@@ -1,28 +1,13 @@
-import {
-  LIBRARY_SORT_LABELS,
-  useUiStore,
-  type LibrarySort,
-  type LibraryView,
-} from '../../stores/uiStore';
-import { formatBytes } from '../../lib/format';
+import { useUiStore, type LibraryView } from '../../stores/uiStore';
+import { FilterPopover } from './FilterPopover';
 
-const QUOTA_BYTES = 100 * 1024 * 1024;
-
-interface Props {
-  usedBytes: number;
-}
-
-export function LibraryToolbar({ usedBytes }: Props) {
+export function LibraryToolbar() {
   const view = useUiStore((s) => s.libraryView);
   const setView = useUiStore((s) => s.setLibraryView);
-  const sort = useUiStore((s) => s.librarySort);
-  const setSort = useUiStore((s) => s.setLibrarySort);
-
-  const usedPct = Math.min(100, Math.round((usedBytes / QUOTA_BYTES) * 100));
 
   return (
-    <div className="flex items-center justify-between gap-4 border-b border-border pb-3">
-      <div className="flex items-center rounded-md border border-border bg-bg-terminal p-0.5">
+    <div className="flex items-center justify-end gap-2 border-b border-border pb-3">
+      <div className="flex h-8 items-center rounded-md border border-border bg-bg-terminal p-0.5">
         <ViewButton current={view} value="grid" onSelect={setView} label="Grid">
           <svg
             width="14"
@@ -61,35 +46,7 @@ export function LibraryToolbar({ usedBytes }: Props) {
         </ViewButton>
       </div>
 
-      <div className="flex items-center gap-2 font-mono text-xs text-text-secondary">
-        <label htmlFor="library-sort">Sort:</label>
-        <select
-          id="library-sort"
-          value={sort}
-          onChange={(e) => setSort(e.target.value as LibrarySort)}
-          className="rounded-md border border-border bg-bg-terminal px-2 py-1 text-text-primary focus:border-accent focus:outline-none"
-        >
-          {(Object.entries(LIBRARY_SORT_LABELS) as [LibrarySort, string][]).map(
-            ([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ),
-          )}
-        </select>
-      </div>
-
-      <div className="flex min-w-[160px] flex-col items-end gap-1 font-mono text-[11px] text-text-muted">
-        <span>
-          {formatBytes(usedBytes)} / {formatBytes(QUOTA_BYTES)}
-        </span>
-        <div className="h-1 w-32 overflow-hidden rounded-full bg-bg-terminal">
-          <div
-            className={`h-full transition-all ${usedPct > 90 ? 'bg-warning' : 'bg-accent'}`}
-            style={{ width: `${usedPct}%` }}
-          />
-        </div>
-      </div>
+      <FilterPopover />
     </div>
   );
 }
@@ -111,7 +68,7 @@ function ViewButton({ current, value, label, onSelect, children }: ViewButtonPro
       title={label}
       aria-label={label}
       aria-pressed={active}
-      className={`rounded-sm px-2 py-1 transition-colors ${
+      className={`flex h-full items-center rounded-sm px-2 transition-colors ${
         active ? 'bg-bg-header text-accent' : 'text-text-secondary hover:text-text-primary'
       }`}
     >

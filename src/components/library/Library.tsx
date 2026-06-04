@@ -1,6 +1,5 @@
 import { useNavigate } from '@tanstack/react-router';
 import { useMemo, useState } from 'react';
-import { useEffect } from 'react';
 import { deleteFile } from '../../lib/api';
 import { useFilesStore } from '../../stores/filesStore';
 import { useUiStore, type LibrarySort } from '../../stores/uiStore';
@@ -9,6 +8,7 @@ import { PdfUpload } from '../upload/PdfUpload';
 import { FileCard } from './FileCard';
 import { FileListRow } from './FileListRow';
 import { LibraryToolbar } from './LibraryToolbar';
+import { QuotaWarning } from './QuotaWarning';
 
 function sortFiles(files: FileRecord[], sort: LibrarySort): FileRecord[] {
   const copy = [...files];
@@ -42,15 +42,10 @@ export function Library() {
   const files = useFilesStore((s) => s.files);
   const loading = useFilesStore((s) => s.loading);
   const error = useFilesStore((s) => s.error);
-  const refresh = useFilesStore((s) => s.refresh);
   const remove = useFilesStore((s) => s.remove);
   const view = useUiStore((s) => s.libraryView);
   const sort = useUiStore((s) => s.librarySort);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-
-  useEffect(() => {
-    void refresh();
-  }, [refresh]);
 
   const sorted = useMemo(() => sortFiles(files, sort), [files, sort]);
   const usedBytes = useMemo(() => files.reduce((sum, f) => sum + f.sizeBytes, 0), [files]);
@@ -82,7 +77,8 @@ export function Library() {
     <div className="flex h-full flex-col gap-6 overflow-y-auto px-6 py-6">
       <PdfUpload />
       {error && <p className="font-mono text-xs text-error">{error}</p>}
-      <LibraryToolbar usedBytes={usedBytes} />
+      <QuotaWarning usedBytes={usedBytes} />
+      <LibraryToolbar />
 
       {view === 'grid' ? (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
