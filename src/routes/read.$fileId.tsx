@@ -28,26 +28,39 @@ function ReadPage() {
   const [isFetching, setIsFetching] = useState(false);
 
   useEffect(() => {
+    const currentSource = useDocumentStore.getState().source;
+
     if (fileId === 'guest') {
-      if (!source || source.type !== 'guest') void navigate({ to: '/home' });
+      if (!currentSource || currentSource.type !== 'guest') void navigate({ to: '/home' });
       return;
     }
 
-    if (source?.type === 'stored' && source.fileId === fileId) return;
+    if (currentSource?.type === 'stored' && currentSource.fileId === fileId) {
+      console.log('[reader] reusing already-loaded doc', { fileId });
+      return;
+    }
 
     let cancelled = false;
     (async () => {
+      console.log('[reader] fetch start', { fileId });
       setIsFetching(true);
       setFetchError(null);
       try {
         const { file, downloadUrl } = await getFile(fileId);
+        console.log('[reader] metadata ok', { name: file.name, sizeBytes: file.sizeBytes });
         const res = await fetch(downloadUrl);
         if (!res.ok) throw new Error(`Download failed: ${res.status}`);
         const bytes = await res.arrayBuffer();
-        if (cancelled) return;
+        console.log('[reader] download ok', { bytes: bytes.byteLength });
+        if (cancelled) {
+          console.log('[reader] cancelled before loadFromBuffer');
+          return;
+        }
         await loadFromBuffer(bytes, file.name, { type: 'stored', fileId });
+        console.log('[reader] loadFromBuffer ok');
         if (!cancelled) setIsFetching(false);
       } catch (e) {
+        console.error('[reader] fetch failed', e);
         if (!cancelled) {
           setFetchError(e instanceof Error ? e.message : 'Failed to load PDF');
           setIsFetching(false);
@@ -57,7 +70,7 @@ function ReadPage() {
     return () => {
       cancelled = true;
     };
-  }, [fileId, source, loadFromBuffer, navigate]);
+  }, [fileId, loadFromBuffer, navigate]);
 
   const pdf = usePdfReader(300);
   useKeyboardControls(pdf.reader);

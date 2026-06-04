@@ -107,6 +107,7 @@ export function PlaybackControls({ reader }: Props) {
               type="range"
               value={wpm}
               onChange={(e) => reader.setWpm(Number(e.target.value))}
+              onPointerUp={(e) => e.currentTarget.blur()}
               min={100}
               max={1000}
               step={25}

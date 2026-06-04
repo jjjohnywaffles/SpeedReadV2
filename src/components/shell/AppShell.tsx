@@ -10,6 +10,8 @@ interface Props {
   children: ReactNode;
 }
 
+const HEADER_HEIGHT = 56;
+
 export function AppShell({ centerSlot, children }: Props) {
   const sidebarOpen = useUiStore((s) => s.sidebarOpen);
   const toggleSidebar = useUiStore((s) => s.toggleSidebar);
@@ -17,8 +19,11 @@ export function AppShell({ centerSlot, children }: Props) {
   const user = useAuthStore((s) => s.user);
 
   return (
-    <div className="flex h-screen w-full flex-col bg-bg-primary">
-      <header className="relative flex h-14 shrink-0 items-center border-b border-border px-4">
+    <div className="relative flex h-screen w-full flex-col bg-bg-primary">
+      <header
+        className="relative z-30 flex shrink-0 items-center border-b border-border bg-bg-terminal px-4"
+        style={{ height: HEADER_HEIGHT }}
+      >
         <div className="flex flex-1 items-center">
           <button
             type="button"
@@ -53,21 +58,24 @@ export function AppShell({ centerSlot, children }: Props) {
         </div>
       </header>
 
-      <div className="relative flex-1 overflow-hidden">
-        {sidebarOpen && (
-          <>
-            <button
-              type="button"
-              aria-label="Close sidebar"
-              onClick={() => setSidebarOpen(false)}
-              className="absolute inset-0 z-10 cursor-default bg-transparent"
-            />
-            <div className="absolute left-0 top-0 z-20 h-full">
-              <Sidebar />
-            </div>
-          </>
-        )}
-        <main className="h-full overflow-hidden">{children}</main>
+      <main className="flex-1 overflow-hidden">{children}</main>
+
+      <button
+        type="button"
+        aria-label="Close sidebar"
+        onClick={() => setSidebarOpen(false)}
+        tabIndex={sidebarOpen ? 0 : -1}
+        className={`absolute inset-0 z-40 cursor-default ${
+          sidebarOpen ? '' : 'pointer-events-none'
+        }`}
+      />
+      <div
+        className={`absolute inset-y-0 left-0 z-50 transition-transform duration-300 ease-out ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+        aria-hidden={!sidebarOpen}
+      >
+        <Sidebar topPadding={HEADER_HEIGHT} />
       </div>
     </div>
   );

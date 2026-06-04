@@ -17,6 +17,52 @@
   --font-mono: 'JetBrains Mono', 'Fira Code', 'Monaco', monospace;
 }
 
+/* ===== Terminal (default) ===== */
+:root,
+[data-theme='terminal'] {
+  --color-bg-primary: #0d0d0d;
+  --color-bg-terminal: #1a1a1a;
+  --color-bg-header: #2d2d2d;
+  --color-text-primary: #e0e0e0;
+  --color-text-secondary: #888888;
+  --color-text-muted: #555555;
+  --color-accent: #00ff88;
+  --color-accent-secondary: #00aaff;
+  --color-error: #ff5555;
+  --color-warning: #ffaa00;
+  --color-border: #333333;
+}
+
+/* ===== Soft — warm off-black, amber accent ===== */
+[data-theme='soft'] {
+  --color-bg-primary: #15151a;
+  --color-bg-terminal: #1f1f26;
+  --color-bg-header: #2a2a32;
+  --color-text-primary: #e8e6e3;
+  --color-text-secondary: #9a948b;
+  --color-text-muted: #5e5a55;
+  --color-accent: #f5a524;
+  --color-accent-secondary: #fb923c;
+  --color-error: #f87171;
+  --color-warning: #facc15;
+  --color-border: #2d2d36;
+}
+
+/* ===== Midnight — cool blue-tinted, indigo accent ===== */
+[data-theme='midnight'] {
+  --color-bg-primary: #0e1424;
+  --color-bg-terminal: #161e34;
+  --color-bg-header: #1f2944;
+  --color-text-primary: #dbe4f0;
+  --color-text-secondary: #8696b3;
+  --color-text-muted: #4e5b78;
+  --color-accent: #6ea8ff;
+  --color-accent-secondary: #a78bfa;
+  --color-error: #f87171;
+  --color-warning: #fbbf24;
+  --color-border: #243150;
+}
+
 @layer base {
   *,
   *::before,
@@ -38,6 +84,9 @@
     color: var(--color-text-primary);
     line-height: 1.6;
     font-size: 14px;
+    transition:
+      background-color 250ms ease,
+      color 250ms ease;
   }
 }
 

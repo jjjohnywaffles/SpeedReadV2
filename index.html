@@ -6,6 +6,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="SpeedRead — read faster using RSVP." />
     <title>SpeedRead</title>
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem('sr.theme');
+          if (t === 'soft' || t === 'midnight' || t === 'terminal') {
+            document.documentElement.setAttribute('data-theme', t);
+          } else {
+            document.documentElement.setAttribute('data-theme', 'terminal');
+          }
+        } catch (e) {
+          document.documentElement.setAttribute('data-theme', 'terminal');
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
