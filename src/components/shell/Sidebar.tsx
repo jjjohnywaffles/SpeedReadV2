@@ -9,11 +9,16 @@ export function Sidebar({ topPadding = 56 }: Props) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   return (
-    <aside
-      className="flex h-full w-56 flex-col border-r border-border bg-bg-terminal p-3"
-      style={{ paddingTop: topPadding + 12 }}
-    >
-      <nav className="flex flex-col gap-1">
+    <aside className="flex h-full w-56 flex-col border-r border-border bg-bg-terminal">
+      <div
+        className="flex shrink-0 items-center border-b border-border px-4"
+        style={{ height: topPadding }}
+      >
+        <span className="font-mono text-lg font-bold tracking-tight text-text-primary">
+          Speed<span className="text-accent">Read</span>
+        </span>
+      </div>
+      <nav className="flex flex-col gap-1 p-3">
         <NavButton
           to="/home"
           label="Library"

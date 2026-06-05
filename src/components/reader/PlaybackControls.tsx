@@ -10,7 +10,7 @@ export function PlaybackControls({ reader }: Props) {
     reader;
 
   return (
-    <div className="flex flex-col gap-3 border-t border-border p-4">
+    <div className="border-t border-border p-4">
       <div className="relative flex items-center gap-4">
         <span className="flex-1 font-mono text-xs tabular-nums text-text-muted">
           {currentIndex + 1} / {totalWords}
@@ -85,7 +85,7 @@ export function PlaybackControls({ reader }: Props) {
             <button
               type="button"
               onClick={reader.reset}
-              className="absolute left-full ml-3 rounded-md p-2 font-mono text-xs text-text-secondary transition-colors hover:bg-bg-terminal hover:text-text-primary"
+              className="ml-3 rounded-md p-2 font-mono text-xs text-text-secondary transition-colors hover:bg-bg-terminal hover:text-text-primary"
             >
               <svg
                 width="16"
@@ -126,12 +126,6 @@ export function PlaybackControls({ reader }: Props) {
             </span>
           </div>
         )}
-      </div>
-
-      <div className="flex justify-center gap-4 font-mono text-[10px] text-text-muted">
-        <span>Space: play/pause</span>
-        <span>←→: skip 10</span>
-        <span>R: reset</span>
       </div>
     </div>
   );

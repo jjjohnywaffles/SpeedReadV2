@@ -9,13 +9,19 @@ export function GuestPanel() {
 
   return (
     <div className="flex h-full flex-col items-center justify-center gap-6 px-6 py-12 text-center">
-      <div className="w-full max-w-md">
+      <div className="flex w-full max-w-md flex-col items-center gap-2">
         <PdfUpload
           disabled={!!guestDoc}
           disabledHint={
             guestDoc ? 'Sign in to upload more — guest can only hold one document' : undefined
           }
         />
+        <Link
+          to="/paste"
+          className="font-mono text-xs text-text-secondary underline decoration-text-muted underline-offset-4 transition-colors hover:text-text-primary hover:decoration-text-secondary"
+        >
+          or paste text instead
+        </Link>
       </div>
 
       {guestDoc && guestFileName && (
