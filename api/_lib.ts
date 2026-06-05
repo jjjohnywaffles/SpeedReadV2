@@ -4,11 +4,20 @@ import { Storage } from '@google-cloud/storage';
 import { cert, getApps, initializeApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID ?? '';
-const GCS_BUCKET_NAME = process.env.GCS_BUCKET_NAME ?? '';
-const GCP_PROJECT_ID = process.env.GCP_PROJECT_ID ?? '';
-const GCP_SERVICE_ACCOUNT_KEY = process.env.GCP_SERVICE_ACCOUNT_KEY ?? '';
-const FIRESTORE_DATABASE_ID = process.env.FIRESTORE_DATABASE_ID ?? '';
+function readEnv(key: string): string {
+  const raw = process.env[key] ?? '';
+  // Some env loaders preserve surrounding quotes from .env files; strip them.
+  if (raw.length >= 2 && raw.startsWith('"') && raw.endsWith('"')) {
+    return raw.slice(1, -1);
+  }
+  return raw;
+}
+
+const GOOGLE_CLIENT_ID = readEnv('GOOGLE_CLIENT_ID');
+const GCS_BUCKET_NAME = readEnv('GCS_BUCKET_NAME');
+const GCP_PROJECT_ID = readEnv('GCP_PROJECT_ID');
+const GCP_SERVICE_ACCOUNT_KEY = readEnv('GCP_SERVICE_ACCOUNT_KEY');
+const FIRESTORE_DATABASE_ID = readEnv('FIRESTORE_DATABASE_ID');
 
 function decodeServiceAccount(): {
   client_email: string;
@@ -36,6 +45,7 @@ export function getBucket() {
   return getStorage().bucket(GCS_BUCKET_NAME);
 }
 
+let dbInitLogged = false;
 export function getDb() {
   if (!getApps().length) {
     const sa = decodeServiceAccount();
@@ -49,6 +59,12 @@ export function getDb() {
     });
   }
   const db = FIRESTORE_DATABASE_ID ? getFirestore(FIRESTORE_DATABASE_ID) : getFirestore();
+  if (!dbInitLogged) {
+    console.log(
+      `[api] Firestore init — project=${GCP_PROJECT_ID || '(from SA)'} database=${FIRESTORE_DATABASE_ID || '(default)'}`,
+    );
+    dbInitLogged = true;
+  }
   return db;
 }
 
@@ -82,9 +98,20 @@ export async function requireUser(
 }
 
 export const QUOTA_BYTES = 100 * 1024 * 1024;
+export const FIRESTORE_INLINE_MAX_BYTES = 700 * 1024;
 
-export function gcsPath(userId: string, fileId: string): string {
-  return `users/${userId}/${fileId}.pdf`;
+export type DocumentSourceType = 'pdf' | 'epub' | 'docx' | 'html' | 'txt' | 'md' | 'paste';
+
+export function originalGcsPath(
+  userId: string,
+  fileId: string,
+  source: DocumentSourceType,
+): string {
+  return `users/${userId}/${fileId}.original.${source}`;
+}
+
+export function parsedGcsPath(userId: string, fileId: string): string {
+  return `users/${userId}/${fileId}.parsed.json`;
 }
 
 export function withErrorHandling(
@@ -106,14 +133,43 @@ export function withErrorHandling(
 export interface FileRecord {
   fileId: string;
   name: string;
+  source: DocumentSourceType;
   sizeBytes: number;
   contentHash: string;
   numPages: number;
   totalWords: number;
   uploadedAt: number;
+  parsedInline?: { pages: string[][] };
+  hasParsedBlob?: boolean;
   progress?: {
     currentWordIndex: number;
     wpm: number;
     lastReadAt: number;
+  };
+}
+
+interface StoredPage {
+  words: string[];
+}
+
+interface FirestoreFileRecord extends Omit<FileRecord, 'parsedInline'> {
+  parsedInline?: { pages: StoredPage[] };
+}
+
+export function toFirestoreShape(record: FileRecord): FirestoreFileRecord {
+  const { parsedInline, ...rest } = record;
+  if (!parsedInline) return rest;
+  return {
+    ...rest,
+    parsedInline: { pages: parsedInline.pages.map((words) => ({ words })) },
+  };
+}
+
+export function fromFirestoreShape(stored: FirestoreFileRecord): FileRecord {
+  const { parsedInline, ...rest } = stored;
+  if (!parsedInline) return rest;
+  return {
+    ...rest,
+    parsedInline: { pages: parsedInline.pages.map((p) => p.words) },
   };
 }

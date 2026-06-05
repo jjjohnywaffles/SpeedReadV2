@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { useEdgeAwarePosition } from '../../hooks/useEdgeAwarePosition';
 
 export interface DropdownOption<T extends string> {
   value: T;
@@ -23,17 +25,28 @@ export function CustomDropdown<T extends string>({
   className = '',
 }: Props<T>) {
   const [open, setOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const activeIndexRef = useRef(0);
+
+  const pos = useEdgeAwarePosition({
+    anchorRef: buttonRef,
+    contentRef: listRef,
+    preferred: 'bottom',
+    preferredHAlign: 'start',
+    open,
+  });
 
   const selected = options.find((o) => o.value === value);
 
   useEffect(() => {
     if (!open) return;
     const onClick = (e: MouseEvent) => {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false);
+      const target = e.target as Node;
+      if (buttonRef.current?.contains(target)) return;
+      if (listRef.current?.contains(target)) return;
+      setOpen(false);
     };
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -82,8 +95,14 @@ export function CustomDropdown<T extends string>({
     }
   };
 
+  const [buttonWidth, setButtonWidth] = useState<number | undefined>(undefined);
+  useLayoutEffect(() => {
+    if (!open) return;
+    if (buttonRef.current) setButtonWidth(buttonRef.current.offsetWidth);
+  }, [open]);
+
   return (
-    <div ref={rootRef} className={`relative inline-block ${className}`}>
+    <div className={`relative inline-block ${className}`}>
       {label && <label className="mb-1 block font-mono text-[11px] text-text-muted">{label}</label>}
       <button
         ref={buttonRef}
@@ -110,54 +129,63 @@ export function CustomDropdown<T extends string>({
         </svg>
       </button>
 
-      {open && (
-        <ul
-          role="listbox"
-          tabIndex={-1}
-          onKeyDown={handleListKey}
-          className="absolute left-0 right-0 top-full z-50 mt-1 max-h-60 min-w-full overflow-auto rounded-md border border-border bg-bg-terminal py-1 shadow-lg"
-        >
-          {options.map((opt, i) => {
-            const isSelected = opt.value === value;
-            return (
-              <li key={opt.value} role="option" aria-selected={isSelected}>
-                <button
-                  ref={(el) => {
-                    itemRefs.current[i] = el;
-                  }}
-                  type="button"
-                  onClick={() => {
-                    onChange(opt.value);
-                    setOpen(false);
-                    buttonRef.current?.focus();
-                  }}
-                  className={`flex w-full items-center justify-between gap-3 px-3 py-1.5 text-left font-mono text-xs transition-colors ${
-                    isSelected
-                      ? 'text-accent'
-                      : 'text-text-secondary hover:bg-bg-header hover:text-text-primary'
-                  } focus:bg-bg-header focus:text-text-primary focus:outline-none`}
-                >
-                  <span>{opt.label}</span>
-                  {isSelected && (
-                    <svg
-                      width="12"
-                      height="12"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="3"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                  )}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+      {open &&
+        createPortal(
+          <ul
+            ref={listRef}
+            role="listbox"
+            tabIndex={-1}
+            onKeyDown={handleListKey}
+            style={{
+              position: 'fixed',
+              top: pos.top,
+              left: pos.left,
+              minWidth: buttonWidth,
+            }}
+            className="z-[80] max-h-60 overflow-auto rounded-md border border-border bg-bg-terminal py-1 shadow-lg"
+          >
+            {options.map((opt, i) => {
+              const isSelected = opt.value === value;
+              return (
+                <li key={opt.value} role="option" aria-selected={isSelected}>
+                  <button
+                    ref={(el) => {
+                      itemRefs.current[i] = el;
+                    }}
+                    type="button"
+                    onClick={() => {
+                      onChange(opt.value);
+                      setOpen(false);
+                      buttonRef.current?.focus();
+                    }}
+                    className={`flex w-full items-center justify-between gap-3 px-3 py-1.5 text-left font-mono text-xs transition-colors ${
+                      isSelected
+                        ? 'text-accent'
+                        : 'text-text-secondary hover:bg-bg-header hover:text-text-primary'
+                    } focus:bg-bg-header focus:text-text-primary focus:outline-none`}
+                  >
+                    <span>{opt.label}</span>
+                    {isSelected && (
+                      <svg
+                        width="12"
+                        height="12"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    )}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>,
+          document.body,
+        )}
     </div>
   );
 }

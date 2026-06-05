@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { formatBytes } from '../../lib/format';
 import { useAuthStore } from '../../stores/authStore';
 import { useFilesStore } from '../../stores/filesStore';
+import { Tooltip } from '../ui/Tooltip';
 
 const QUOTA_BYTES = 100 * 1024 * 1024;
 
@@ -35,14 +36,15 @@ export function ProfileMenu() {
 
   return (
     <div ref={ref} className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="block h-8 w-8 overflow-hidden rounded-full border border-border transition-opacity hover:opacity-80"
-        title={user.email}
-      >
-        <img src={user.picture} alt={user.name} className="h-full w-full object-cover" />
-      </button>
+      <Tooltip text={user.email} placement="bottom">
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          className="block h-8 w-8 overflow-hidden rounded-full border border-border transition-opacity hover:opacity-80"
+        >
+          <img src={user.picture} alt={user.name} className="h-full w-full object-cover" />
+        </button>
+      </Tooltip>
       {open && (
         <div className="absolute right-0 top-10 z-50 w-64 rounded-lg border border-border bg-bg-terminal py-2 font-mono text-xs shadow-lg">
           <div className="px-3 py-2 text-text-secondary">

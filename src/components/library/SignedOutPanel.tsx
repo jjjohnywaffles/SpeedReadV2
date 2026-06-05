@@ -3,7 +3,7 @@ import { SignInButton } from '../auth/SignInButton';
 import { PdfUpload } from '../upload/PdfUpload';
 
 export function SignedOutPanel() {
-  const guestDoc = useDocumentStore((s) => s.doc);
+  const guestDoc = useDocumentStore((s) => s.numPages > 0);
 
   return (
     <div className="flex h-full flex-col items-center justify-center gap-8 px-6 py-12 text-center">

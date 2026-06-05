@@ -9,7 +9,7 @@ import { AppShell } from '../components/shell/AppShell';
 import { useKeyboardControls } from '../hooks/useKeyboardControls';
 import { usePdfReader } from '../hooks/usePdfReader';
 import { useReadingProgress } from '../hooks/useReadingProgress';
-import { getFile } from '../lib/api';
+import { fetchParsedJson, getFile } from '../lib/api';
 import { useDocumentStore } from '../stores/documentStore';
 
 export const Route = createFileRoute('/read/$fileId')({
@@ -21,48 +21,48 @@ function ReadPage() {
   const navigate = useNavigate();
   const fileName = useDocumentStore((s) => s.fileName);
   const numPages = useDocumentStore((s) => s.numPages);
-  const source = useDocumentStore((s) => s.source);
-  const loadFromBuffer = useDocumentStore((s) => s.loadFromBuffer);
+  const location = useDocumentStore((s) => s.location);
+  const setParsed = useDocumentStore((s) => s.setParsed);
 
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [isFetching, setIsFetching] = useState(false);
 
   useEffect(() => {
-    const currentSource = useDocumentStore.getState().source;
+    const current = useDocumentStore.getState().location;
 
     if (fileId === 'guest') {
-      if (!currentSource || currentSource.type !== 'guest') void navigate({ to: '/home' });
+      if (!current || current.type !== 'guest') void navigate({ to: '/home' });
       return;
     }
 
-    if (currentSource?.type === 'stored' && currentSource.fileId === fileId) {
-      console.log('[reader] reusing already-loaded doc', { fileId });
-      return;
-    }
+    if (current?.type === 'stored' && current.fileId === fileId) return;
 
     let cancelled = false;
     (async () => {
-      console.log('[reader] fetch start', { fileId });
       setIsFetching(true);
       setFetchError(null);
       try {
-        const { file, downloadUrl } = await getFile(fileId);
-        console.log('[reader] metadata ok', { name: file.name, sizeBytes: file.sizeBytes });
-        const res = await fetch(downloadUrl);
-        if (!res.ok) throw new Error(`Download failed: ${res.status}`);
-        const bytes = await res.arrayBuffer();
-        console.log('[reader] download ok', { bytes: bytes.byteLength });
-        if (cancelled) {
-          console.log('[reader] cancelled before loadFromBuffer');
-          return;
+        const { file, parsedDownloadUrl } = await getFile(fileId);
+        let pages: string[][];
+        if (file.parsedInline?.pages) {
+          pages = file.parsedInline.pages;
+        } else if (parsedDownloadUrl) {
+          const parsed = await fetchParsedJson(parsedDownloadUrl);
+          pages = parsed.pages;
+        } else {
+          throw new Error('No parsed content available for this file');
         }
-        await loadFromBuffer(bytes, file.name, { type: 'stored', fileId });
-        console.log('[reader] loadFromBuffer ok');
+        if (cancelled) return;
+        setParsed({
+          fileName: file.name,
+          source: file.source,
+          pages,
+          location: { type: 'stored', fileId },
+        });
         if (!cancelled) setIsFetching(false);
       } catch (e) {
-        console.error('[reader] fetch failed', e);
         if (!cancelled) {
-          setFetchError(e instanceof Error ? e.message : 'Failed to load PDF');
+          setFetchError(e instanceof Error ? e.message : 'Failed to load file');
           setIsFetching(false);
         }
       }
@@ -70,17 +70,17 @@ function ReadPage() {
     return () => {
       cancelled = true;
     };
-  }, [fileId, loadFromBuffer, navigate]);
+  }, [fileId, setParsed, navigate]);
 
   const pdf = usePdfReader(300);
   useKeyboardControls(pdf.reader);
-  useReadingProgress(pdf.reader, source);
+  useReadingProgress(pdf.reader, location);
 
   const { reader, pages, pageStartIndices, currentPage, goToPage, isReady, loadError } = pdf;
 
   if (fetchError || loadError) {
     return (
-      <AppShell centerSlot={<span>Error</span>}>
+      <AppShell centerSlot={<span>Error</span>} backHref="/home" backLabel="Back to library">
         <div className="flex h-full flex-col items-center justify-center gap-4 px-6 text-center">
           <p className="font-mono text-sm text-error">{fetchError ?? loadError}</p>
           <Link
@@ -96,11 +96,9 @@ function ReadPage() {
 
   if (isFetching || numPages === 0 || !isReady) {
     return (
-      <AppShell centerSlot={<span>Loading…</span>}>
+      <AppShell centerSlot={<span>Loading…</span>} backHref="/home" backLabel="Back to library">
         <div className="flex h-full items-center justify-center">
-          <p className="font-mono text-sm text-text-muted">
-            {isFetching ? 'Downloading PDF…' : 'Parsing PDF…'}
-          </p>
+          <p className="font-mono text-sm text-text-muted">Loading document…</p>
         </div>
       </AppShell>
     );
@@ -110,7 +108,11 @@ function ReadPage() {
   const currentPageStart = pageStartIndices[currentPage - 1] ?? 0;
 
   return (
-    <AppShell centerSlot={<span className="truncate text-text-primary">{fileName}</span>}>
+    <AppShell
+      centerSlot={<span className="truncate text-text-primary">{fileName}</span>}
+      backHref="/home"
+      backLabel="Back to library"
+    >
       <div className="flex h-full w-full flex-col">
         <div className="flex h-72 shrink-0 flex-col items-center justify-center border-b border-border px-8 sm:h-96">
           {!reader.hasStarted ? (

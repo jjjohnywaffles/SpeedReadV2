@@ -1,18 +1,22 @@
 import type { ReactNode } from 'react';
+import { Link } from '@tanstack/react-router';
 import { useAuthStore } from '../../stores/authStore';
 import { useUiStore } from '../../stores/uiStore';
 import { ProfileMenu } from '../auth/ProfileMenu';
 import { SignInButton } from '../auth/SignInButton';
+import { Tooltip } from '../ui/Tooltip';
 import { Sidebar } from './Sidebar';
 
 interface Props {
   centerSlot?: ReactNode;
+  backHref?: string;
+  backLabel?: string;
   children: ReactNode;
 }
 
 const HEADER_HEIGHT = 56;
 
-export function AppShell({ centerSlot, children }: Props) {
+export function AppShell({ centerSlot, backHref, backLabel = 'Back', children }: Props) {
   const sidebarOpen = useUiStore((s) => s.sidebarOpen);
   const toggleSidebar = useUiStore((s) => s.toggleSidebar);
   const setSidebarOpen = useUiStore((s) => s.setSidebarOpen);
@@ -25,28 +29,52 @@ export function AppShell({ centerSlot, children }: Props) {
         style={{ height: HEADER_HEIGHT }}
       >
         <div className="flex flex-1 items-center">
-          <button
-            type="button"
-            onClick={toggleSidebar}
-            className="rounded-md p-2 text-text-secondary transition-colors hover:bg-bg-terminal hover:text-text-primary"
-            title={sidebarOpen ? 'Hide sidebar' : 'Show sidebar'}
-            aria-label="Toggle sidebar"
-          >
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+          <Tooltip text={sidebarOpen ? 'Hide sidebar' : 'Show sidebar'} placement="bottom">
+            <button
+              type="button"
+              onClick={toggleSidebar}
+              className="rounded-md p-2 text-text-secondary transition-colors hover:bg-bg-terminal hover:text-text-primary"
+              aria-label="Toggle sidebar"
             >
-              <line x1="3" y1="6" x2="21" y2="6" />
-              <line x1="3" y1="12" x2="21" y2="12" />
-              <line x1="3" y1="18" x2="21" y2="18" />
-            </svg>
-          </button>
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <line x1="3" y1="12" x2="21" y2="12" />
+                <line x1="3" y1="18" x2="21" y2="18" />
+              </svg>
+            </button>
+          </Tooltip>
+          {backHref && (
+            <Tooltip text={backLabel} placement="bottom">
+              <Link
+                to={backHref}
+                aria-label={backLabel}
+                className="ml-1 flex items-center rounded-md p-2 text-text-secondary transition-colors hover:bg-bg-header hover:text-text-primary"
+              >
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <line x1="19" y1="12" x2="5" y2="12" />
+                  <polyline points="12 19 5 12 12 5" />
+                </svg>
+              </Link>
+            </Tooltip>
+          )}
         </div>
 
         <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 truncate font-mono text-sm text-text-secondary">

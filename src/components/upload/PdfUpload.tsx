@@ -1,6 +1,7 @@
 import { useNavigate } from '@tanstack/react-router';
 import { useRef, useState } from 'react';
 import { useUpload, type UploadStatus } from '../../hooks/useUpload';
+import { SUPPORTED_EXTENSIONS } from '../../lib/parsers';
 import type { FileRecord } from '../../types/api';
 
 interface Props {
@@ -9,12 +10,15 @@ interface Props {
 }
 
 const STATUS_LABEL: Record<UploadStatus, string> = {
-  idle: 'Click to upload or drag a PDF here',
-  parsing: 'Parsing PDF…',
+  idle: 'Click to upload or drag a document',
+  parsing: 'Parsing…',
   hashing: 'Hashing…',
   uploading: 'Uploading…',
   done: 'Done',
 };
+
+const ACCEPT_ATTR = SUPPORTED_EXTENSIONS.map((ext) => `.${ext}`).join(',');
+const SUPPORTED_LABEL = SUPPORTED_EXTENSIONS.map((ext) => ext.toUpperCase()).join(', ');
 
 export function PdfUpload({ disabled, disabledHint }: Props) {
   const navigate = useNavigate();
@@ -29,23 +33,20 @@ export function PdfUpload({ disabled, disabledHint }: Props) {
   const handleFile = async (file: File) => {
     setError(null);
     setDuplicate(null);
-    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
-      setError('Only PDF files are supported.');
-      return;
-    }
     const outcome = await upload(file);
     if (outcome.kind === 'done') {
       if (outcome.result.source === 'guest') {
         navigate({ to: '/read/$fileId', params: { fileId: 'guest' } });
-      } else if (outcome.result.file) {
-        navigate({ to: '/read/$fileId', params: { fileId: outcome.result.file.fileId } });
       }
+      // Signed-in: stay on /home so the user can see the new file land in the library.
     } else if (outcome.kind === 'duplicate') {
       setDuplicate(outcome.existing);
     } else if (outcome.kind === 'quota') {
       const usedMb = (outcome.usedBytes / 1024 / 1024).toFixed(1);
       const quotaMb = (outcome.quotaBytes / 1024 / 1024).toFixed(0);
       setError(`Quota exceeded — using ${usedMb} / ${quotaMb} MB. Delete files to upload more.`);
+    } else if (outcome.kind === 'unsupported') {
+      setError(`Unsupported file: ${outcome.fileName}. Supported formats: ${SUPPORTED_LABEL}.`);
     } else {
       setError(outcome.message);
     }
@@ -99,14 +100,17 @@ export function PdfUpload({ disabled, disabledHint }: Props) {
           {disabled && disabledHint
             ? disabledHint
             : isDragging
-              ? 'Drop your PDF here'
+              ? 'Drop your document here'
               : STATUS_LABEL[status]}
         </span>
+        {!disabled && status === 'idle' && (
+          <span className="font-mono text-[10px] text-text-muted">{SUPPORTED_LABEL}</span>
+        )}
       </button>
       <input
         ref={inputRef}
         type="file"
-        accept="application/pdf,.pdf"
+        accept={ACCEPT_ATTR}
         onChange={(e) => {
           const file = e.target.files?.[0];
           if (file) void handleFile(file);

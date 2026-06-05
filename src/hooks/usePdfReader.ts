@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useDocumentStore } from '../stores/documentStore';
 import { useReader, type UseReader } from './useReader';
 
@@ -13,32 +13,7 @@ export interface PdfReader {
 }
 
 export function usePdfReader(initialWpm = 300): PdfReader {
-  const numPages = useDocumentStore((s) => s.numPages);
-  const getPageWords = useDocumentStore((s) => s.getPageWords);
-
-  const [pages, setPages] = useState<string[][]>([]);
-  const [loadError, setLoadError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (numPages === 0) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const all = await Promise.all(
-          Array.from({ length: numPages }, (_, i) => getPageWords(i + 1)),
-        );
-        if (!cancelled) {
-          setPages(all);
-          setLoadError(null);
-        }
-      } catch (e) {
-        if (!cancelled) setLoadError(e instanceof Error ? e.message : 'Failed to parse PDF.');
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [numPages, getPageWords]);
+  const pages = useDocumentStore((s) => s.pages);
 
   const { flatText, pageStartIndices } = useMemo(() => {
     const starts: number[] = [];
@@ -72,6 +47,6 @@ export function usePdfReader(initialWpm = 300): PdfReader {
     currentPage,
     goToPage,
     isReady: pages.length > 0,
-    loadError,
+    loadError: null,
   };
 }

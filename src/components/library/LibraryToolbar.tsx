@@ -1,4 +1,5 @@
 import { useUiStore, type LibraryView } from '../../stores/uiStore';
+import { Tooltip } from '../ui/Tooltip';
 import { FilterPopover } from './FilterPopover';
 
 export function LibraryToolbar() {
@@ -7,7 +8,7 @@ export function LibraryToolbar() {
 
   return (
     <div className="flex items-center justify-end gap-2 border-b border-border pb-3">
-      <div className="flex h-8 items-center rounded-md border border-border bg-bg-terminal p-0.5">
+      <div className="flex h-8 items-stretch overflow-hidden rounded-md border border-border bg-bg-terminal">
         <ViewButton current={view} value="grid" onSelect={setView} label="Grid">
           <svg
             width="14"
@@ -62,17 +63,18 @@ interface ViewButtonProps {
 function ViewButton({ current, value, label, onSelect, children }: ViewButtonProps) {
   const active = current === value;
   return (
-    <button
-      type="button"
-      onClick={() => onSelect(value)}
-      title={label}
-      aria-label={label}
-      aria-pressed={active}
-      className={`flex h-full items-center rounded-sm px-2 transition-colors ${
-        active ? 'bg-bg-header text-accent' : 'text-text-secondary hover:text-text-primary'
-      }`}
-    >
-      {children}
-    </button>
+    <Tooltip text={label}>
+      <button
+        type="button"
+        onClick={() => onSelect(value)}
+        aria-label={label}
+        aria-pressed={active}
+        className={`flex aspect-square items-center justify-center transition-colors ${
+          active ? 'bg-bg-header text-accent' : 'text-text-secondary hover:text-text-primary'
+        }`}
+      >
+        {children}
+      </button>
+    </Tooltip>
   );
 }

@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { ApiError, createFile, uploadToSignedUrl } from '../lib/api';
+import { ApiError, createFile, uploadOriginal, uploadParsedJson } from '../lib/api';
 import { sha256 } from '../lib/hash';
-import { loadPdf, getPageText } from '../lib/pdf';
+import { parseFile, UnsupportedFormatError } from '../lib/parsers';
 import { useAuthStore } from '../stores/authStore';
 import { useDocumentStore } from '../stores/documentStore';
 import { useFilesStore } from '../stores/filesStore';
@@ -18,6 +18,7 @@ export type UploadOutcome =
   | { kind: 'done'; result: UploadResult }
   | { kind: 'duplicate'; existing: FileRecord }
   | { kind: 'quota'; usedBytes: number; quotaBytes: number }
+  | { kind: 'unsupported'; fileName: string }
   | { kind: 'error'; message: string };
 
 export function useUpload() {
@@ -26,24 +27,32 @@ export function useUpload() {
   const isGuest = useAuthStore((s) => s.isGuest);
   const user = useAuthStore((s) => s.user);
   const continueAsGuest = useAuthStore((s) => s.continueAsGuest);
-  const loadFile = useDocumentStore((s) => s.loadFile);
+  const setParsed = useDocumentStore((s) => s.setParsed);
   const upsert = useFilesStore((s) => s.upsert);
 
   const upload = async (file: File): Promise<UploadOutcome> => {
     setError(null);
     try {
       setStatus('parsing');
-      const buf = await file.arrayBuffer();
-      const doc = await loadPdf(buf.slice(0));
-      const numPages = doc.numPages;
-      const allPages = await Promise.all(
-        Array.from({ length: numPages }, (_, i) => getPageText(doc, i + 1)),
-      );
-      const totalWords = allPages.reduce((sum, p) => sum + p.words.length, 0);
+      let parsed;
+      try {
+        parsed = await parseFile(file);
+      } catch (e) {
+        if (e instanceof UnsupportedFormatError) {
+          setStatus('idle');
+          return { kind: 'unsupported', fileName: e.fileName };
+        }
+        throw e;
+      }
 
       if (!user) {
         if (!isGuest) continueAsGuest();
-        await loadFile(file, { type: 'guest' });
+        setParsed({
+          fileName: file.name,
+          source: parsed.source,
+          pages: parsed.pages,
+          location: { type: 'guest' },
+        });
         setStatus('done');
         return { kind: 'done', result: { source: 'guest' } };
       }
@@ -56,10 +65,12 @@ export function useUpload() {
       try {
         created = await createFile({
           name: file.name,
+          source: parsed.source,
           sizeBytes: file.size,
           contentHash,
-          numPages,
-          totalWords,
+          numPages: parsed.numPages,
+          totalWords: parsed.totalWords,
+          pages: parsed.pages,
         });
       } catch (e) {
         if (e instanceof ApiError && e.status === 409) {
@@ -75,9 +86,19 @@ export function useUpload() {
         throw e;
       }
 
-      await uploadToSignedUrl(created.uploadUrl, file);
+      const uploads: Promise<void>[] = [];
+      if (created.originalUploadUrl) uploads.push(uploadOriginal(created.originalUploadUrl, file));
+      if (created.parsedUploadUrl)
+        uploads.push(uploadParsedJson(created.parsedUploadUrl, parsed.pages));
+      if (uploads.length > 0) await Promise.all(uploads);
+
       upsert(created.file);
-      await loadFile(file, { type: 'stored', fileId: created.file.fileId });
+      setParsed({
+        fileName: file.name,
+        source: parsed.source,
+        pages: parsed.pages,
+        location: { type: 'stored', fileId: created.file.fileId },
+      });
       setStatus('done');
       return { kind: 'done', result: { source: 'stored', file: created.file } };
     } catch (e) {

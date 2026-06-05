@@ -1,5 +1,5 @@
 import { useAuthStore } from '../stores/authStore';
-import type { FileRecord } from '../types/api';
+import type { DocumentSourceType, FileRecord } from '../types/api';
 
 export class ApiError extends Error {
   constructor(
@@ -49,15 +49,21 @@ export async function listFiles(): Promise<{ files: FileRecord[] }> {
 
 export interface CreateFilePayload {
   name: string;
+  source: DocumentSourceType;
   sizeBytes: number;
   contentHash: string;
   numPages: number;
   totalWords: number;
+  pages: string[][];
 }
 
-export async function createFile(
-  payload: CreateFilePayload,
-): Promise<{ uploadUrl: string; file: FileRecord }> {
+export interface CreateFileResponse {
+  file: FileRecord;
+  originalUploadUrl?: string | null;
+  parsedUploadUrl?: string | null;
+}
+
+export async function createFile(payload: CreateFilePayload): Promise<CreateFileResponse> {
   return json(
     await authedFetch('/api/files', {
       method: 'POST',
@@ -67,7 +73,12 @@ export async function createFile(
   );
 }
 
-export async function getFile(fileId: string): Promise<{ file: FileRecord; downloadUrl: string }> {
+export interface GetFileResponse {
+  file: FileRecord;
+  parsedDownloadUrl: string | null;
+}
+
+export async function getFile(fileId: string): Promise<GetFileResponse> {
   return json(await authedFetch(`/api/files/${fileId}`));
 }
 
@@ -88,11 +99,26 @@ export async function putProgress(
   if (!res.ok && res.status !== 204) throw new ApiError(res.status, await res.text());
 }
 
-export async function uploadToSignedUrl(uploadUrl: string, file: File): Promise<void> {
+export async function uploadOriginal(uploadUrl: string, file: File): Promise<void> {
   const res = await fetch(uploadUrl, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/pdf' },
+    headers: { 'Content-Type': file.type || 'application/octet-stream' },
     body: file,
   });
   if (!res.ok) throw new ApiError(res.status, await res.text());
+}
+
+export async function uploadParsedJson(uploadUrl: string, pages: string[][]): Promise<void> {
+  const res = await fetch(uploadUrl, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ pages }),
+  });
+  if (!res.ok) throw new ApiError(res.status, await res.text());
+}
+
+export async function fetchParsedJson(downloadUrl: string): Promise<{ pages: string[][] }> {
+  const res = await fetch(downloadUrl);
+  if (!res.ok) throw new ApiError(res.status, await res.text());
+  return res.json();
 }

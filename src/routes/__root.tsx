@@ -1,4 +1,5 @@
 import { Outlet, createRootRoute } from '@tanstack/react-router';
+import { ConfirmDialogHost } from '../components/ui/ConfirmDialog';
 import { useAuthBootstrap } from '../hooks/useAuthBootstrap';
 
 export const Route = createRootRoute({
@@ -10,6 +11,7 @@ function RootLayout() {
   return (
     <div className="flex min-h-full w-full flex-col bg-bg-primary text-text-primary">
       <Outlet />
+      <ConfirmDialogHost />
     </div>
   );
 }

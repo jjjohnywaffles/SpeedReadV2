@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { formatBytes, formatRelativeTime } from '../../lib/format';
+import { FORMAT_BADGES } from '../../lib/parsers';
 import type { FileRecord } from '../../types/api';
+import { Tooltip } from '../ui/Tooltip';
 
 interface Props {
   file: FileRecord;
@@ -32,7 +34,7 @@ export function FileListRow({ file, selected, onSelect, onOpen, onDelete }: Prop
       }}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
-      className={`grid cursor-pointer grid-cols-[20px_minmax(0,1fr)_180px_120px_80px_24px] items-center gap-3 rounded-md border px-3 py-2 transition-colors ${
+      className={`grid cursor-pointer grid-cols-[20px_50px_minmax(0,1fr)_180px_120px_80px_24px] items-center gap-3 rounded-md border px-3 py-2 transition-colors ${
         selected
           ? 'border-accent bg-accent/5'
           : 'border-transparent hover:border-border hover:bg-bg-terminal'
@@ -53,6 +55,10 @@ export function FileListRow({ file, selected, onSelect, onOpen, onDelete }: Prop
         <polyline points="14 2 14 8 20 8" />
       </svg>
 
+      <span className="font-mono text-[10px] uppercase tracking-wider text-text-muted">
+        {FORMAT_BADGES[file.source]}
+      </span>
+
       <span className="truncate font-mono text-xs text-text-primary" title={file.name}>
         {file.name}
       </span>
@@ -72,35 +78,36 @@ export function FileListRow({ file, selected, onSelect, onOpen, onDelete }: Prop
         {formatBytes(file.sizeBytes)}
       </span>
 
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          onDelete();
-        }}
-        tabIndex={-1}
-        className={`rounded-md p-1 text-text-muted transition-opacity hover:bg-error/20 hover:text-error ${
-          hover ? 'opacity-100' : 'opacity-0'
-        }`}
-        title="Delete"
-        aria-label="Delete"
-      >
-        <svg
-          width="14"
-          height="14"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
+      <Tooltip text="Delete">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
+          tabIndex={-1}
+          className={`rounded-md p-1 text-text-muted transition-opacity hover:bg-error/20 hover:text-error ${
+            hover ? 'opacity-100' : 'opacity-0'
+          }`}
+          aria-label="Delete"
         >
-          <polyline points="3 6 5 6 21 6" />
-          <path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6" />
-          <path d="M10 11v6M14 11v6" />
-          <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" />
-        </svg>
-      </button>
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <polyline points="3 6 5 6 21 6" />
+            <path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6" />
+            <path d="M10 11v6M14 11v6" />
+            <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" />
+          </svg>
+        </button>
+      </Tooltip>
     </div>
   );
 }

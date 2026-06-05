@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { getFile, putProgress } from '../lib/api';
 import { useFilesStore } from '../stores/filesStore';
-import type { DocumentSource } from '../stores/documentStore';
+import type { DocumentLocation } from '../stores/documentStore';
 import type { UseReader } from './useReader';
 
 const DEBOUNCE_MS = 5000;
@@ -24,8 +24,8 @@ function flushProgress(
   });
 }
 
-export function useReadingProgress(reader: UseReader, source: DocumentSource | null) {
-  const fileId = source?.type === 'stored' ? source.fileId : null;
+export function useReadingProgress(reader: UseReader, location: DocumentLocation | null) {
+  const fileId = location?.type === 'stored' ? location.fileId : null;
   const updateProgress = useFilesStore((s) => s.updateProgress);
 
   const hasLoadedRef = useRef<string | null>(null);

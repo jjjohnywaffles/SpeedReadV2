@@ -1,9 +1,10 @@
-import { useNavigate } from '@tanstack/react-router';
+import { Link, useNavigate } from '@tanstack/react-router';
 import { useMemo, useState } from 'react';
 import { deleteFile } from '../../lib/api';
 import { useFilesStore } from '../../stores/filesStore';
 import { useUiStore, type LibrarySort } from '../../stores/uiStore';
 import type { FileRecord } from '../../types/api';
+import { useConfirm } from '../ui/ConfirmDialog';
 import { PdfUpload } from '../upload/PdfUpload';
 import { FileCard } from './FileCard';
 import { FileListRow } from './FileListRow';
@@ -45,13 +46,23 @@ export function Library() {
   const remove = useFilesStore((s) => s.remove);
   const view = useUiStore((s) => s.libraryView);
   const sort = useUiStore((s) => s.librarySort);
+  const confirm = useConfirm();
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const sorted = useMemo(() => sortFiles(files, sort), [files, sort]);
   const usedBytes = useMemo(() => files.reduce((sum, f) => sum + f.sizeBytes, 0), [files]);
 
   const onDelete = async (fileId: string) => {
-    if (!confirm('Delete this file? This cannot be undone.')) return;
+    const file = files.find((f) => f.fileId === fileId);
+    const ok = await confirm({
+      title: 'Delete file?',
+      message: file
+        ? `"${file.name}" will be permanently removed.`
+        : 'This file will be permanently removed.',
+      confirmLabel: 'Delete',
+      destructive: true,
+    });
+    if (!ok) return;
     try {
       await deleteFile(fileId);
       remove(fileId);
@@ -65,17 +76,31 @@ export function Library() {
 
   if (isEmpty) {
     return (
-      <div className="flex h-full flex-col items-center justify-center px-6 py-6">
+      <div className="flex h-full flex-col items-center justify-center gap-3 px-6 py-6">
         <div className="w-full max-w-md">
           <PdfUpload />
         </div>
+        <Link
+          to="/paste"
+          className="font-mono text-xs text-text-secondary underline decoration-text-muted underline-offset-4 transition-colors hover:text-text-primary hover:decoration-text-secondary"
+        >
+          or paste text instead
+        </Link>
       </div>
     );
   }
 
   return (
     <div className="flex h-full flex-col gap-6 overflow-y-auto px-6 py-6">
-      <PdfUpload />
+      <div className="flex flex-col items-center gap-2">
+        <PdfUpload />
+        <Link
+          to="/paste"
+          className="font-mono text-xs text-text-secondary underline decoration-text-muted underline-offset-4 transition-colors hover:text-text-primary hover:decoration-text-secondary"
+        >
+          or paste text instead
+        </Link>
+      </div>
       {error && <p className="font-mono text-xs text-error">{error}</p>}
       <QuotaWarning usedBytes={usedBytes} />
       <LibraryToolbar />
@@ -95,8 +120,9 @@ export function Library() {
         </div>
       ) : (
         <div className="flex flex-col">
-          <div className="grid grid-cols-[20px_minmax(0,1fr)_180px_120px_80px_24px] items-center gap-3 border-b border-border px-3 pb-2 font-mono text-[10px] uppercase tracking-wider text-text-muted">
+          <div className="grid grid-cols-[20px_50px_minmax(0,1fr)_180px_120px_80px_24px] items-center gap-3 border-b border-border px-3 pb-2 font-mono text-[10px] uppercase tracking-wider text-text-muted">
             <span />
+            <span>Type</span>
             <span>Name</span>
             <span>Progress</span>
             <span>Last opened</span>
