@@ -80,12 +80,14 @@ export function PlaybackControls({ reader }: Props) {
               </svg>
             </button>
           </Tooltip>
+        </div>
 
+        <div className="absolute left-1/2 ml-[110px] flex items-center">
           <Tooltip text="Reset (R)">
             <button
               type="button"
               onClick={reader.reset}
-              className="ml-3 rounded-md p-2 font-mono text-xs text-text-secondary transition-colors hover:bg-bg-terminal hover:text-text-primary"
+              className="rounded-md p-2 font-mono text-xs text-text-secondary transition-colors hover:bg-bg-terminal hover:text-text-primary"
             >
               <svg
                 width="16"
